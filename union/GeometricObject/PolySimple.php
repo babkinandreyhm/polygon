@@ -1,17 +1,14 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: andrey
- * Date: 31.01.16
- * Time: 21:34
- */
 
 namespace union\GeometricObject;
 
 use union\Point\Point;
 
-class PolySimple
+class PolySimple implements PolyInterface
 {
+    /**
+     * @var PolyInterface[]
+     */
     public $mList = [];
 
     public $mContributes;
@@ -68,7 +65,12 @@ class PolySimple
 
     public function getY($index)
     {
-        return $this->mList[$index]->getY();
+        return $this->mList[$index]->getY($index);
+    }
+
+    public function getX($index)
+    {
+        return $this->mList[$index]->getX($index);
     }
 
     public function isEmpty()

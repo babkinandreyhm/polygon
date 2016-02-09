@@ -379,8 +379,7 @@ static.clip = function ( op, subj, clip, polyClass) {
     }
 	
     /* Build scanbeam table from scanbeam tree */
-    var sbt = sbte.buil
-    d_sbt();
+    var sbt = sbte.build_sbt();
 	
 	
 	
@@ -444,7 +443,8 @@ static.clip = function ( op, subj, clip, polyClass) {
         if( Clip.DEBUG )
         {
             aet.print();
-        }aet.print();
+        }
+        aet.print();
         /* Set dummy previous x value */
         var px = -Number.MAX_VALUE;
 
@@ -1586,7 +1586,7 @@ gpcas.geometry.AetTree = function(){
     this.top_node = null; //EdgeNode
 };
 gpcas.geometry.AetTree.prototype.print = function() {
-    //console.log("aet");
+    console.log("aet");
     for( var edge= this.top_node ; (edge != null) ; edge = edge.next ) {
         console.log("edge.vertex.x="+edge.vertex.x+"  edge.vertex.y="+edge.vertex.y);
     }

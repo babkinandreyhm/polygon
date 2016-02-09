@@ -55,6 +55,7 @@ class TopPolygonNode
     {
         /* Label contour as a hole */
         $q->getProxy()->setHole(true);
+        $topNode = $this->topNode;
 
         if ($p->getProxy() !== $q->getProxy()) {
             /* Assign p's vertex list to the left end of q's list */
@@ -67,7 +68,7 @@ class TopPolygonNode
             /* Redirect any p.proxy references to q.proxy */
 
             $target = $p->getProxy();
-            for ($node = $this->topNode; ($node != null); $node = $node->getNext()) {
+            for ($node = $topNode; ($node != null); $node = $node->getNext()) {
                 if ($node->getProxy() === $target) {
                     $node->setActive(0);
                     $node->setProxy($q->getProxy());
@@ -140,13 +141,15 @@ class TopPolygonNode
     }
 
     /**
-     * @return Polygon
+     * @return PolyInterface
      */
-    public function getResult()
+    public function getResult($polyClass)
     {
-        $result = new Polygon();
+        $topNode = $this->getTopNode();
+        $result = PolygonUtils::createNewPoly($polyClass);
         $numContours = $this->countContours();
         if ($numContours > 0) {
+            $c = 0;
             /** @var PolygonNode $nPolyNode */
             $nPolyNode = null;
             for ($polyNode = $this->topNode; ($polyNode != null); $polyNode = $nPolyNode) {
@@ -155,7 +158,7 @@ class TopPolygonNode
                     $polygon = $result;
 
                     if ($numContours > 1) {
-                        $polygon = new Polygon();
+                        $polygon = PolygonUtils::createNewPoly($polyClass);
                     }
 
                     if ($polyNode->getProxy()->isHole()) {
@@ -166,28 +169,29 @@ class TopPolygonNode
                     // reverse order ---
 
                     for ($vtx = $polyNode->getProxy()->getVertexList()[PolygonUtils::LEFT]; ($vtx != null); $vtx = $vtx->getNext()) {
-                        $polygon->addVertex(new Point($vtx->getX(), $vtx->getY()));
+                        $polygon->add(new Point($vtx->getX(), $vtx->getY()));
                     }
 
                     if ($numContours > 1) {
-                        $result->addPolygon($polygon);
+                        $result->addPoly($polygon);
                     }
+                    $c++;
                 }
             }
 
             // --- Sort holes to the end of the list ---
             $orig = $result;
-            $result = new Polygon();
+            $result = PolygonUtils::createNewPoly($polyClass);
             for ($i = 0; $i < $orig->getNumInnerPoly(); $i++) {
                 $inner = $orig->getInnerPolygon($i);
                 if (!$inner->isHole()) {
-                    $result->addPolygon($inner);
+                    $result->addPoly($inner);
                 }
             }
             for ($i = 0; $i < $orig->getNumInnerPoly(); $i++) {
                 $inner = $orig->getInnerPolygon($i);
                 if ($inner->isHole()) {
-                    $result->addPolygon($inner);
+                    $result->addPoly($inner);
                 }
             }
         }

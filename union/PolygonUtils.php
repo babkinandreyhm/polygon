@@ -16,6 +16,9 @@ use union\GeometricObject\ItNode;
 use union\GeometricObject\ItNodeTable;
 use union\GeometricObject\Polygon;
 use union\GeometricObject\PolygonNode;
+use union\GeometricObject\PolyInterface;
+use union\GeometricObject\PolyDefault;
+use union\GeometricObject\PolySimple;
 use union\GeometricObject\StNode;
 use union\GeometricObject\TopPolygonNode;
 use union\GeometricObject\VertexType;
@@ -33,10 +36,24 @@ class PolygonUtils
 
     private $contributions;
 
-    public function union(Polygon $subject, Polygon $clip)
+    /**
+     * @param $polyClass
+     *
+     * @return PolyInterface
+     */
+    public static function createNewPoly($polyClass)
+    {
+        try {
+            return new $polyClass;
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Wrong poly class');
+        }
+    }
+
+    public function union(PolyInterface $subject, PolyInterface $clip, $polyClass)
     {
         $hState = new HorizontalEdgeStates();
-        $result = new Polygon();
+        $result = self::createNewPoly($polyClass);
 
         if ($subject->isEmpty() && $clip->isEmpty()) {
             return $result;
@@ -98,7 +115,7 @@ class PolygonUtils
                 }
             }
 
-//            $aet->printTree();
+            $aet->printTree();
 
             /* Set dummy previous x value */
             $px = -1e1000;
@@ -152,7 +169,7 @@ class PolygonUtils
 
             /* Process each edge at this scanbeam boundary */
             for ($edge = $aet->getTopNode(); ($edge != null); $edge = $edge->getNext()) {
-                echo $edge->getVertex() . PHP_EOL;
+//                echo $edge->getVertex() . PHP_EOL;
                 $exists[self::CLIP] = $edge->bundle[self::ABOVE][self::CLIP]
                     + ($edge->bundle[self::BELOW][self::CLIP] << 1);
                 $exists[self::SUBJ] = $edge->bundle[self::ABOVE][self::SUBJ]
@@ -363,7 +380,7 @@ class PolygonUtils
                         $q = $e1->outp[self::ABOVE];
 
                         $ix = $insct->getPoint()->getX();
-                        $iy = $insct->getPoint()->getY();
+                        $iy = $insct->getPoint()->getY() + $yb;
 
                         $inClip = ((($e0->bundle[self::ABOVE][self::CLIP] != 0)
                                 && !($e0->getBside()[self::CLIP] != 0))
@@ -560,7 +577,7 @@ class PolygonUtils
         } /* === END OF SCANBEAM PROCESSING ================================== */
 
         /* Generate result polygon from out_poly */
-        $result = $outPoly->getResult();
+        $result = $outPoly->getResult($polyClass);
 
         return $result;
     }
@@ -650,30 +667,30 @@ class PolygonUtils
     /**
      * @param LocalMinimumTable $lmtTable
      * @param ScanBeamTreeEntries $sbte
-     * @param Polygon $polygon
+     * @param PolyInterface $polygon
      * @param int $type
      *
      * @return EdgeTable
      */
-    protected function buildLmt(LocalMinimumTable $lmtTable, ScanBeamTreeEntries $sbte, Polygon $polygon, $type)
+    protected function buildLmt(LocalMinimumTable $lmtTable, ScanBeamTreeEntries $sbte, PolyInterface $polygon, $type)
     {
         /* Create the entire input polygon edge table in one go */
         $edgeTable = new EdgeTable();
 
         for ($c = 0; $c < $polygon->getNumInnerPoly(); $c++) {
             $innerPolygon = $polygon->getInnerPolygon($c);
-            if (isset($this->contributions[$innerPolygon->getId()]) && !$this->contributions[$innerPolygon->getId()]) {
-                $this->contributions[$innerPolygon->getId()] = true;
+            if (!$innerPolygon->isContributing(0)) {
+                $innerPolygon->setContributing(0, true);
             } else {
                 /* Perform contour optimisation */
                 $numVertices = 0;
                 $eIndex = 0;
                 $edgeTable = new EdgeTable();
 
-                for ($i = 0; $i < $innerPolygon->nVertices(); $i++) {
+                for ($i = 0; $i < $innerPolygon->getNumPoints(); $i++) {
                     if ($this->isOptimal($innerPolygon, $i)) {
-                        $x = $innerPolygon->getInnerPolygon(0)->getPoints()[$i]->getX();
-                        $y = $innerPolygon->getInnerPolygon(0)->getPoints()[$i]->getY();
+                        $x = $innerPolygon->getX($i);
+                        $y = $innerPolygon->getY($i);
                         $edgeTable->addNode($x, $y);
 
                         /* Perform contour optimisation */
@@ -697,7 +714,7 @@ class PolygonUtils
                         /* Build the next edge list */
                         $v = $min;
                         $edgeNode = $edgeTable->getNode($eIndex);
-                        $edgeNode->addBstate(self::BELOW, BundleState::unbundled());
+                        $edgeNode->bstate[self::BELOW] = BundleState::unbundled();
                         $edgeNode->bundle[self::BELOW][self::CLIP] = 0;
                         $edgeNode->bundle[self::BELOW][self::SUBJ] = 0;
 
@@ -816,18 +833,15 @@ class PolygonUtils
     }
 
     /**
-     * @param Polygon $polygon
+     * @param PolyInterface $polygon
      * @param int $i
      *
      * @return bool
      */
-    private function isOptimal(Polygon $polygon, $i)
+    private function isOptimal(PolyInterface $polygon, $i)
     {
-        return ($polygon->getInnerPolygon(0)->getPoints()[self::prevIndex($i, $polygon->nVertices())]->getY() !=
-            $polygon->getInnerPolygon(0)->getPoints()[$i]->getY())
-            || ($polygon->getInnerPolygon(0)->getPoints()[self::nextIndex($i, $polygon->nVertices())]->getY() !=
-            $polygon->getInnerPolygon(0)->getPoints()[$i]->getY())
-            ;
+        return ($polygon->getY($this->prevIndex($i, $polygon->getNumPoints())) !== $polygon->getY($i)) ||
+        ($polygon->getY($this->nextIndex($i, $polygon->getNumPoints())) !== $polygon->getY($i));
     }
 
     /**
@@ -858,9 +872,9 @@ class PolygonUtils
                         $prev->setNext($node);
                     }
 
-                    if ($existingNode === $lmtTable->getTopNode()) {
-                        $lmtTable->setTopNode($node);
-                    }
+//                    if ($existingNode === $lmtTable->getTopNode()) {
+//                        $lmtTable->setTopNode($node);
+//                    }
                     $done = true;
                 } elseif ($y > $node->getY()) {
                     /* Head further up the LMT */

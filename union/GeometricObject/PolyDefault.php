@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: andrey
- * Date: 31.01.16
- * Time: 22:50
- */
 
 namespace union\GeometricObject;
 
@@ -83,6 +77,11 @@ class PolyDefault extends PolySimple
         return $this->mList[0]->getY($index);
     }
 
+    public function getX($index)
+    {
+        return $this->mList[0]->getX($index);
+    }
+
     public function getNumInnerPoly()
     {
         return count($this->mList);
@@ -118,5 +117,13 @@ class PolyDefault extends PolySimple
         }
 
         $this->mList[$index]->setContributing(0, $c);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getNumPoints()
+    {
+        return $this->mList[0]->getNumPoints();
     }
 }

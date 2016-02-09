@@ -2,6 +2,7 @@
 
 function my_autoloader($className) {
     $ololo = '/Users/andrey/PhpstormProjects/polygon/';
+    $fileName = '';
     if ($lastNsPos = strrpos($className, '\\')) {
         $namespace = substr($className, 0, $lastNsPos);
         $className = substr($className, $lastNsPos + 1);
@@ -14,6 +15,15 @@ function my_autoloader($className) {
 
 spl_autoload_register('my_autoloader');
 
+function createPoly(array $points) {
+    $res = new \union\GeometricObject\PolyDefault();
+    foreach ($points as $point) {
+        $res->addPoint(new \union\Point\Point($point[0], $point[1]));
+    }
+    
+    return $res;
+}
+
 $vertices1 = [
     [61,68],
     [145,122],
@@ -25,7 +35,7 @@ $vertices1 = [
     [48,139],
     [74,117]
 ];
-$poly1 = new \union\GeometricObject\Polygon($vertices1);
+$poly1 = createPoly($vertices1);
 
 $vertices2 = [
     [131,84],
@@ -34,7 +44,7 @@ $vertices2 = [
     [120,136],
     [60,167],
 ];
-$poly2= new \union\GeometricObject\Polygon($vertices2);
+$poly2= createPoly($vertices2);
 
 $vertices3 = [
     [300,84],
@@ -43,7 +53,7 @@ $vertices3 = [
     [350,210],
     [320,197],
 ];
-$poly3= new \union\GeometricObject\Polygon($vertices3);
+$poly3= createPoly($vertices3);
 
 
 $vertices4 = [
@@ -52,7 +62,7 @@ $vertices4 = [
     [340,150],
     [185, 160]
 ];
-$poly4= new \union\GeometricObject\Polygon($vertices4);
+$poly4= createPoly($vertices4);
 
 
 $vertices5 = [
@@ -61,7 +71,7 @@ $vertices5 = [
     [340,210],
     [185,220]
 ];
-$poly5= new \union\GeometricObject\Polygon($vertices5);
+$poly5= createPoly($vertices5);
 
 $vertices6 = [
     [400,100],
@@ -69,7 +79,7 @@ $vertices6 = [
     [420,200],
     [400,200]
 ];
-$poly6= new \union\GeometricObject\Polygon($vertices6);
+$poly6= createPoly($vertices6);
 
 
 $vertices7 = [
@@ -78,7 +88,7 @@ $vertices7 = [
     [500,120],
     [400,120]
 ];
-$poly7= new \union\GeometricObject\Polygon($vertices7);
+$poly7= createPoly($vertices7);
 
 
 $vertices8 = [
@@ -87,7 +97,7 @@ $vertices8 = [
     [500,200],
     [480,200]
 ];
-$poly8= new \union\GeometricObject\Polygon($vertices8);
+$poly8= createPoly($vertices8);
 
 
 $vertices9 = [
@@ -96,18 +106,17 @@ $vertices9 = [
     [500,200],
     [400,200]
 ];
-$poly9= new \union\GeometricObject\Polygon($vertices9);
+$poly9= createPoly($vertices9);
 
 $utils = new \union\PolygonUtils();
 
-$diff = $utils->union($poly1, $poly3);
-//$diff = $utils->union($diff, $poly2);
-//$diff = $utils->union($diff, $poly4);
-//$diff = $utils->union($diff, $poly5);
-//$diff = $utils->union($diff, $poly6);
-//$diff = $utils->union($diff, $poly7);
-//$diff = $utils->union($diff, $poly8);
-//$diff = $utils->union($diff, $poly9);
-
-var_dump($diff);
+$polyClass = 'union\GeometricObject\PolyDefault';
+$diff = $utils->union($poly1, $poly2, $polyClass);
+$diff = $utils->union($diff, $poly3, $polyClass);
+$diff = $utils->union($diff, $poly4, $polyClass);
+$diff = $utils->union($diff, $poly5, $polyClass);
+$diff = $utils->union($diff, $poly6, $polyClass);
+$diff = $utils->union($diff, $poly7, $polyClass);
+$diff = $utils->union($diff, $poly8, $polyClass);
+$diff = $utils->union($diff, $poly9, $polyClass);
 
